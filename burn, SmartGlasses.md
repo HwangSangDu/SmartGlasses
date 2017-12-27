@@ -1,4 +1,4 @@
-Project: SmartGlasses
+Project: SmartGlasses  
 AppName: OOOO
 LastUpdate: 2017.12.27 15:53 최환영 (GitHub상에서 원본 수정 금지)
 Version: beta 1.0
