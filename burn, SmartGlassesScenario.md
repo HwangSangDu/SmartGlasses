@@ -5,6 +5,8 @@ Version: beta 1.0
 
 *주요기술: Bluetooth, NFC, SQLite, TTS  
 *Platform: Android  
+*Log: 2017.12.27 Project Scenario beta  
+      2017.12.31 App UI Wireframe beta
 
 #App 실행 방법  
 -NFC(혹은 다른 기술)이용, Tag시 App 실행(시각 장애인을 위한 실행방법)  
