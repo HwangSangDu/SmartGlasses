@@ -4,6 +4,7 @@ LastUpdate: 2017.12.27 15:53 최환영 (GitHub상에서 원본 수정 금지)
 Version: beta 1.0  
 
 *주요기술: Bluetooth, NFC, SQLite, TTS  
+*Platform: Android  
 
 #App 실행 방법  
 -NFC(혹은 다른 기술)이용, Tag시 App 실행(시각 장애인을 위한 실행방법)  
