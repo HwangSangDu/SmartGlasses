@@ -62,14 +62,14 @@ print(listLength)
 
 
 # 추가 시 길이에 변화가 생기면서 루프문을 벗어난다.
-print("length checking...")
-while (search(IMAGE_DIR)) == listLength:
-  time.sleep
-  continue
-
-# 길이를 업데이트한다.
-print("Add Image File")
-listLength = search(IMAGE_DIR)
+#print("length checking...")
+#while (search(IMAGE_DIR)) == listLength:
+#  time.sleep
+#  continue
+#
+## 길이를 업데이트한다.
+#print("Add Image File")
+#listLength = search(IMAGE_DIR)
 
 
 
@@ -104,10 +104,10 @@ listLength = search(IMAGE_DIR)
 # search3(IMAGE_DIR)
 
 
-command = "rm " + IMAGE_DIR + "/*.json"
-print(command)
-os.system(command)
-sys.exit()
+#command = "rm " + IMAGE_DIR + "/*.json"
+#print(command)
+#os.system(command)
+# sys.exit()
 
 
 
