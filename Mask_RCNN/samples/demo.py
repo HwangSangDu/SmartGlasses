@@ -49,6 +49,7 @@ IMAGE_DIR = os.path.join(ROOT_DIR, "images")
 
 
 # ls
+# return length
 def search(dir):
         files = os.listdir(dir)
         # for file in files:
@@ -62,14 +63,14 @@ print(listLength)
 
 
 # 추가 시 길이에 변화가 생기면서 루프문을 벗어난다.
-#print("length checking...")
-#while (search(IMAGE_DIR)) == listLength:
-#  time.sleep
+# print("length checking...")
+# while (search(IMAGE_DIR)) == listLength:
+#  time.sleep(0.1)  # 0.1초
 #  continue
-#
-## 길이를 업데이트한다.
-#print("Add Image File")
-#listLength = search(IMAGE_DIR)
+
+# # 길이를 업데이트한다.
+# print("Add New Image File")
+# listLength = search(IMAGE_DIR)
 
 
 
@@ -108,7 +109,9 @@ print(listLength)
 #print(command)
 #os.system(command)
 # sys.exit()
-
+command = "rm " + IMAGE_DIR + "/.DS_Store"
+print(command)
+os.system(command)
 
 
 
@@ -194,13 +197,47 @@ class_names = ['BG', 'person', 'bicycle', 'car', 'motorcycle', 'airplane',
 
 # Load a random image from the images folder
 file_names = next(os.walk(IMAGE_DIR))[2]
-image = skimage.io.imread(os.path.join(IMAGE_DIR, random.choice(file_names)))
 
-# Run detection
+print("선택 사진 : ", file_names[0])
+print()
+
+# image = skimage.io.imread(os.path.join(IMAGE_DIR, random.choice(file_names)))
+
+## Read 1번째 사진
+print("read Image")
+image = skimage.io.imread(os.path.join(IMAGE_DIR, file_names[0]))
+
+## Run detection
 results = model.detect([image], verbose=1)
 
-# Visualize results
+## Visualize results (결과값을 저장하고 사진으로 띄워서 보여준다.)
+print(results)
 r = results[0]
-visualize.display_instances(image, r['rois'], r['masks'], r['class_ids'], 
-                            class_names, r['scores'])
+# visualize.display_instances(image, r['rois'], r['masks'], r['class_ids'], class_names, r['scores'])
+
+
+## Log print
+# print()
+# print("print R : ",r)
+# print()
+# print("print masks", r['masks'])
+# print()
+del r['masks']
+print(r)
+
+print()
+print("result : ", results)
+
+
+
+## 사진을 지운다.
+# command = "rm " + IMAGE_DIR + "/*"
+# print(command)
+# os.system(command)
+
+
+
+
+
+
 
