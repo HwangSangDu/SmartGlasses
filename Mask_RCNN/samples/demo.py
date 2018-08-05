@@ -34,13 +34,31 @@ C_BGWHITE  = "\033[47m"
 
 
 def printComment(str):
-  print(C_BOLD +  C_GREEN + str + C_END)
+  print(C_BOLD + C_GREEN)
+  print(str)
+  print(C_END)
+  # print(C_BOLD +  C_GREEN + str + C_END)
 def printError(str):
-  print(C_BOLD +  C_RED + str + C_END)
+  print(C_BOLD + C_RED)
+  print(str)
+  print(C_END)
+  # print(C_BOLD +  C_RED + str + C_END)
 
 
+
+
+from threading import Thread
+from multiprocessing import Pool
+# from multiprocessing import Queue
+import json
+import http.client
+import urllib
+# import json
+from collections import OrderedDict
+import queue as Queue
 import re
 import time
+import threading
 import os
 import sys
 import random
@@ -84,6 +102,9 @@ printComment("COCO_MODEL_PATH : " + COCO_MODEL_PATH)
 
 
 
+
+file_data = OrderedDict()
+
 # ls
 # return length
 def search(dir):
@@ -92,8 +113,40 @@ def search(dir):
         #         print(file)
         return len(files)
 
+#JSON Data convert to Array data
+def jsonToidx(json_list):
+  index = 0
+  arrayData = []
+  for item in json_list:
+      arrayData.insert(index,item)
+      index += 1
+  return arrayData
 
+#Array Data convert to Name Data
+def idxToName(id_list):
+  index = 0
+  arrayData = []
+  for item in id_list:
+      arrayData.insert(index,class_names[int(item)])
+      index += 1
+  return arrayData
 
+#Send data to Server
+def sendToServer(data_list):
+  #Set Data
+  params = urllib.parse.urlencode({'data':data_list})
+  headers = {"Content-type": "application/x-www-form-urlencoded","Accept": "text/plain"}
+  
+  #Linking with Server, Update Host and port of server with Yuntae
+  # conn = http.client.HTTPConnection("192.168.0.6",8080)
+  conn = http.client.HTTPConnection("192.168.43.59",8080)
+  conn.connect()
+  #Update directory server with Yuntae
+  conn.request("POST", "/JspServerTest/NewFile.jsp", params, headers)
+  r1 = conn.getresponse()
+  print(r1.status, r1.reason)
+  conn.close() 
+  print("SendToServer() Fnished!!!!")
 
 
 
@@ -144,6 +197,46 @@ def search(dir):
 # print()
 # print()
 # search3(IMAGE_DIR)
+
+
+
+printComment("Define Thread Pool Function")
+class Worker(Thread):
+    """Thread executing tasks from a given tasks queue"""
+    def __init__(self, tasks):
+        Thread.__init__(self)
+        self.tasks = tasks
+        self.daemon = True
+        self.start()
+
+    def run(self):
+        while True:
+            func, args, kargs = self.tasks.get()
+            try:
+                func(*args, **kargs)
+            except Exception as e:
+                print (e)
+            # finally:
+                # self.tasks.task_done()
+
+
+class ThreadPool:
+    """Pool of threads consuming tasks from a queue"""
+    def __init__(self, num_threads):
+        self.tasks = Queue.Queue(num_threads)
+        for _ in range(num_threads):
+            Worker(self.tasks)
+
+    def add_task(self, func, *args, **kargs):
+        """Add a task to the queue"""
+        self.tasks.put((func, args, kargs))
+
+    def wait_completion(self):
+        """Wait for completion of all the tasks in the queue"""
+        res = self.tasks.join()
+        printComment("Join Return Compeletion")
+        return res
+
 
 
 
@@ -232,52 +325,75 @@ class_names = ['BG', 'person', 'bicycle', 'car', 'motorcycle', 'airplane',
 
 # In[5]:
 
-while True :
 
-  listLength = search(IMAGE_DIR)
-  print(listLength)
+
+## Define Threading JOB
+# def threadingJOB(image):
+#   printError ("Threading JOB")
+#   res1 = model.detect([image], verbose=0)
+#   print(res1)
+#   # res = res[0]
+#   return res1
+def threadingJOB(imageArr):
+  printError ("Threading JOB")
+  for item in imageArr:
+    res = model.detect([item], verbose=0)
+    print(res)
+
+pool = ThreadPool(20)
+
+## Erase Picture
+command = "rm " + IMAGE_DIR + "/*"
+print(command)
+printComment("Erase Image DIR")
+os.system(command)
+listLength = 0
+jobList = []
+
+while True :
   # 추가 시 길이에 변화가 생기면서 루프문을 벗어난다.
   printComment("Length Checking...")
-  while (search(IMAGE_DIR)) == listLength:
+  while (search(IMAGE_DIR)) == 0:
    time.sleep(0.1)  # 0.1초
    printError("Time Sleep")
    continue
 
-  
-  # 길이를 업데이트한다.
+  ## Update Length
   printComment("Add New Image File")
   listLength = search(IMAGE_DIR)
-  print(listLength)
+  printComment("list Length : ")
+  printComment(listLength)
 
 
   ## Excute Command 
   printComment("Remove /.DS_Store")
-  #command = "rm " + IMAGE_DIR + "/*.json"
-  #print(command)
-  #os.system(command)
+  # command = "rm " + IMAGE_DIR + "/*.json"
+  # print(command)
+  # os.system(command)
   command = "rm " + IMAGE_DIR + "/.DS_Store"
   printComment(command)
   os.system(command)
-  print()
 
 
-  ## Load a random image from the images folder
+  ## Load first Image
   printComment("Load Image")
+  # files = next(os.walk(IMAGE_DIR))
+  # printComment(files)
+  ## 파일 전체 리스트
   file_names = next(os.walk(IMAGE_DIR))[2]
-  printComment( "Selected Image : " + file_names[0])
+  printComment( "Selected Image : ")
+  print(file_names)
   print()
+
 
   ## file_names Filtering
-  # file_names.extend(["1","2","3","4","5"])
-  print(file_names)
   printComment("Filtering file_names")
   # p = re.compile('\.(jpg|gif|png)')
   p = re.compile('\w+\.(jpg|gif|png|jpeg)')
-
-
   file_names = list(filter(p.match, file_names)) # Read Note
-  print(file_names)
-  printComment("Regex Completion")
+  printComment(file_names)
+  print("Regex Completion")
+
   # print(len(file_names))
   # for i in range(0, len(file_names)): 
   # for ele in file_names:
@@ -288,28 +404,177 @@ while True :
   # print(file_names)
 
 
-
-
-
-  ## Read 1번째 사진
-  printComment("read Image")
+  ## Read Image files
+  printComment("Read Image")
   # image = skimage.io.imread(os.path.join(IMAGE_DIR, random.choice(file_names)))
-  image = skimage.io.imread(os.path.join(IMAGE_DIR, file_names[0]))
+  jobList.extend(file_names)
+  # for i in range(0, len(file_names)):
+  #   image = skimage.io.imread(os.path.join(IMAGE_DIR, file_names[i]))
+  #   jobList.append(image)
+  printComment("JOB LIST PRINT : ")
+  print(len(jobList))
+  # print(jobList)
 
 
-  ## Run detection
-  results = model.detect([image], verbose=1)
-  printComment("Detect Completion")
-  r = results[0]
+
+
+
+
+
+  try :
+    printComment("Detect Completion")
+    for i in range(0, len(jobList)):
+      results = model.detect([jobList[i]], verbose=0)  
+    # results = model.detect([image], verbose=0)
+    # printComment("Return results")
+    r = results[0]
+
+  except Exception as ex: # 에러 종류
+    printError("DETECT 에러 발생 ") # ex는 발생한 에러의 이름을 받아오는 변수
+    print(ex)
+    command = "rm " + IMAGE_DIR + "/" + file_names[0]
+    printComment(command)
+    printComment("Erase Image DIR")
+    os.system(command)
+    continue
+
+
+
+
+
+  
+
+  ## np.array to String
+  # print(r['masks'])
+  # print(r['class_ids'][0])
+  # print(r['rois'][0])
+  # r['class_ids'][0] = r['class_ids'][0].astype('str')
+  # print(type(r['class_ids'][0]))
+  # example
+  '''
+  >>> x = np.array([1e-16,1,2,3])
+  >>> print(np.array2string(x, precision=2, separator=',',
+  ...                       suppress_small=True))
+  [ 0., 1., 2., 3.]
+  '''
+  printComment("JSON Data LOAD")
+  del r['masks']
+  print(r)
+  
+  ## class_ids
+  list1 = []
+  length = len(r['class_ids'])
+  for i in range(0, length):
+    list1.append(np.array2string(r['class_ids'][i], precision=2, separator=',', suppress_small=True))
+  r['class_ids'] = list1
+  # print(r['class_ids'])
+
+  ## rois
+  list2 = []
+  length = len(r['rois'])
+  for i in range(0, length):
+    length2 =  len(r['rois'][i])
+    list2_sub = []
+    for j in range(0, length2):
+      list2_sub.append(np.array2string(r['rois'][i][j], precision=2, separator=',', suppress_small=True))
+    list2.append(list2_sub)
+  r['rois'] = list2
+
+  ## scores
+  list3 = []
+  length = len(r['scores'])
+  for i in range(0, length):
+    list3.append(np.array2string(r['scores'][i], precision=2, separator=',', suppress_small=True))
+  r['scores'] = list3
+
+
+  printComment(r)
+
+
+  # print(r['class_ids'])
+  # print(r['rois'])
+  # print(r['scores'])
+
+
+  # r['rois'] = str(r['rois'])
+  # print(r['rois'])
+  # sys.exit()
+  # length = len(r['rois'])
+  # for i in range(0,length):
+  #   r['rois'][i] = str(r['rois'][i])
+
+  # for key, value in r.items():
+  #   r[key] = str(value)
+  #   print(r[key])
+  # r = str(r)
+
+  # sys.exit()
+
+
+  # str(r)
+  # r['rois'] = str(r['rois'])
+  # r['']
+
+
+  # r = json.dumps(r)
+  # print(r)
+  # sys.exit()
+
+  ##Test Json Data
+  # r = '{"rois": [["r_1","r_2","r_3"]], "class_ids": ["1","22"] , "scores": ["90"] }'
+  # print(r)
+  # sys.exit()
+
+
+
+  # data = json.loads(r)
+  # data = str(r)
+  # print(data)
+  # print(type(data))
+  # print(data['rois'])
+  # print(data['class_ids'])
+
+
+  ## dictionary --> String
+  r = json.dumps(r)
+  printComment(r)
+  ## String --> JSON OBJECT
+  data = json.loads(r)
+
+  ## Devided Json Data
+  printComment("Devided JSON DATA")
+  pre_rois = data['rois']
+  pre_class_ids = data['class_ids']
+  pre_score = data['scores']
+  jsonidx = jsonToidx(pre_class_ids)
+  # print("JSON IDX : ", jsonidx)
+  idxName = idxToName(jsonidx)
+  # print("JSON idxName : ", idxName)
+
+  print(pre_rois)
+  print("----->jsonidx Data :",jsonidx)
+  print("----->idxName Data :",idxName)
+  print(pre_score)
+
+  ## Merge to Json Data
+  file_data["rois"] = pre_rois
+  file_data["class_names"] = idxName
+  file_data["scores"] = pre_score
+  print(json.dumps(file_data,ensure_ascii=False,indent="\t"))
+  ## Send File
+  printComment("Send to File")
+  sendToServer(file_data)
+
+
+
 
 
   ## Visualize results (결과값을 저장하고 사진으로 띄워서 보여준다.)
   # visualize.display_instances(image, r['rois'], r['masks'], r['class_ids'], class_names, r['scores'])
 
-
   ## Delete masks element
   printComment("_DELETE mask")
-  del r['masks']
+  # del r['masks']
   printComment("results : ")
   print(r)
 
@@ -319,7 +584,46 @@ while True :
   print(command)
   printComment("Erase Image DIR")
   os.system(command)
-  time.sleep(0.1)  # 0.1초
+  listLength = 0
+  # time.sleep(0.1)  # 0.1초
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
