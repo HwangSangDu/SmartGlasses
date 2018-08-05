@@ -1,13 +1,5 @@
 
 # coding: utf-8
-
-# # Mask R-CNN Demo
-# 
-# A quick intro to using the pre-trained model to detect and segment objects.
-
-# In[1]:
-
-
 C_END     = "\033[0m"
 C_BOLD    = "\033[1m"
 C_INVERSE = "\033[7m"
@@ -29,10 +21,6 @@ C_BGBLUE   = "\033[44m"
 C_BGPURPLE = "\033[45m"
 C_BGCYAN   = "\033[46m"
 C_BGWHITE  = "\033[47m"
-
-
-
-
 def printComment(str):
   print(C_BOLD + C_GREEN)
   print(str)
@@ -43,9 +31,6 @@ def printError(str):
   print(str)
   print(C_END)
   # print(C_BOLD +  C_RED + str + C_END)
-
-
-
 
 from threading import Thread
 from multiprocessing import Pool
@@ -70,49 +55,35 @@ import matplotlib.pyplot as plt
 
 # Root directory of the project
 ROOT_DIR = os.path.abspath("../")
-
 # Import Mask RCNN
 sys.path.append(ROOT_DIR)  # To find local version of the library
 from mrcnn import utils
 import mrcnn.model as modellib
 from mrcnn import visualize
 # Import COCO config
-sys.path.append(os.path.join(ROOT_DIR, "samples/coco/"))  # To find local version
+sys.path.append(os.path.join(ROOT_DIR, "samples/coco/"))
 import coco
-
-# get_ipython().run_line_magic('matplotlib', 'inline')
-
-# Directory to save logs and trained model
+## Directory to save logs and trained model
 MODEL_DIR = os.path.join(ROOT_DIR, "logs")
-
-# Local path to trained weights file
+## Local path to trained weights file
 COCO_MODEL_PATH = os.path.join(ROOT_DIR, "mask_rcnn_coco.h5")
-# Download COCO trained weights from Releases if needed
+## Download COCO trained weights from Releases if needed
 if not os.path.exists(COCO_MODEL_PATH):
     utils.download_trained_weights(COCO_MODEL_PATH)
-
-# Directory of images to run detection on
+## Directory of images to run detection on
 IMAGE_DIR = os.path.join(ROOT_DIR, "images")
+printComment("Directory Print : ")
+print("ROOT_DIR : " + ROOT_DIR)
+print("IMAGE_DIR : " + IMAGE_DIR)
+print("MODEL_DIR : " + MODEL_DIR)
+print("COCO_MODEL_PATH : " + COCO_MODEL_PATH)
 
 
-printComment("ROOT_DIR : " + ROOT_DIR)
-printComment("IMAGE_DIR : " + IMAGE_DIR)
-printComment("MODEL_DIR : " + MODEL_DIR)
-printComment("COCO_MODEL_PATH : " + COCO_MODEL_PATH)
 
 
-
-
+## Define JSON USER FUNCTION
+printComment("Define JSON USER FUNCTION")
 file_data = OrderedDict()
-
-# ls
-# return length
-def search(dir):
-        files = os.listdir(dir)
-        # for file in files:
-        #         print(file)
-        return len(files)
-
 #JSON Data convert to Array data
 def jsonToidx(json_list):
   index = 0
@@ -121,7 +92,6 @@ def jsonToidx(json_list):
       arrayData.insert(index,item)
       index += 1
   return arrayData
-
 #Array Data convert to Name Data
 def idxToName(id_list):
   index = 0
@@ -130,7 +100,6 @@ def idxToName(id_list):
       arrayData.insert(index,class_names[int(item)])
       index += 1
   return arrayData
-
 #Send data to Server
 def sendToServer(data_list):
   #Set Data
@@ -149,39 +118,19 @@ def sendToServer(data_list):
   print("SendToServer() Fnished!!!!")
 
 
-
-
-
-
-# while True :
-
-#   # 추가 시 길이에 변화가 생기면서 루프문을 벗어난다.
-#   printComment("Length Checking...")
-#   while (search(IMAGE_DIR)) == listLength:
-#    time.sleep(0.1)  # 0.1초
-#    printError("Time Sleep")
-#    continue
-#   # 길이를 업데이트한다.
-#   printComment("Add New Image File")
-#   listLength = search(IMAGE_DIR)
-#   print(listLength)
-
-
-
-
-
+## Return DIR Length
+def search(dir):
+        files = os.listdir(dir)
+        # for file in files:
+        #         print(file)
+        return len(files)
 
 # def search2(dir):
 #         files = os.listdir(dir)
 #         for file in files:
 #                 fullFilename = os.path.join(dir, file)
 #                 print(fullFilename)
-# print()
-# print()
-# print()
 # search2(IMAGE_DIR)
-
-
 
 
 # def search3(dir):
@@ -192,14 +141,10 @@ def sendToServer(data_list):
 #                         search(fullFilename)
 #                 else:
 #                         print(fullFilename)
-
-# print()
-# print()
-# print()
 # search3(IMAGE_DIR)
 
 
-
+## Define JSON USER FUNCTION
 printComment("Define Thread Pool Function")
 class Worker(Thread):
     """Thread executing tasks from a given tasks queue"""
@@ -219,7 +164,6 @@ class Worker(Thread):
             # finally:
                 # self.tasks.task_done()
 
-
 class ThreadPool:
     """Pool of threads consuming tasks from a queue"""
     def __init__(self, num_threads):
@@ -237,24 +181,8 @@ class ThreadPool:
         printComment("Join Return Compeletion")
         return res
 
-
-
-
-
-
-
-
-
-
-# ## Configurations
-# 
-# We'll be using a model trained on the MS-COCO dataset. The configurations of this model are in the ```CocoConfig``` class in ```coco.py```.
-# 
-# For inferencing, modify the configurations a bit to fit the task. To do so, sub-class the ```CocoConfig``` class and override the attributes you need to change.
-
-# In[1]:
-
-
+## Config COCO FUNC
+printComment("Config COCO")
 class InferenceConfig(coco.CocoConfig):
     # Set batch size to 1 since we'll be running inference on
     # one image at a time. Batch size = GPU_COUNT * IMAGES_PER_GPU
@@ -264,46 +192,15 @@ class InferenceConfig(coco.CocoConfig):
 config = InferenceConfig()
 config.display()
 
-
-# ## Create Model and Load Trained Weights
-
-# In[3]:
-
-
-# Create model object in inference mode.
+## Create model object in inference mode.
 printComment("Create Model Object")
 model = modellib.MaskRCNN(mode="inference", model_dir=MODEL_DIR, config=config)
 
-# Load weights trained on MS-COCO
+## Load weights trained on MS-COCO
 printComment("LOAD MS-COCO")
 model.load_weights(COCO_MODEL_PATH, by_name=True)
 
-
-# ## Class Names
-# 
-# The model classifies objects and returns class IDs, which are integer value that identify each class. Some datasets assign integer values to their classes and some don't. For example, in the MS-COCO dataset, the 'person' class is 1 and 'teddy bear' is 88. The IDs are often sequential, but not always. The COCO dataset, for example, has classes associated with class IDs 70 and 72, but not 71.
-# 
-# To improve consistency, and to support training on data from multiple sources at the same time, our ```Dataset``` class assigns it's own sequential integer IDs to each class. For example, if you load the COCO dataset using our ```Dataset``` class, the 'person' class would get class ID = 1 (just like COCO) and the 'teddy bear' class is 78 (different from COCO). Keep that in mind when mapping class IDs to class names.
-# 
-# To get the list of class names, you'd load the dataset and then use the ```class_names``` property like this.
-# ```
-# # Load COCO dataset
-# dataset = coco.CocoDataset()
-# dataset.load_coco(COCO_DIR, "train")
-# dataset.prepare()
-# 
-# # Print class names
-# print(dataset.class_names)
-# ```
-# 
-# We don't want to require you to download the COCO dataset just to run this demo, so we're including the list of class names below. The index of the class name in the list represent its ID (first class is 0, second is 1, third is 2, ...etc.)
-
-# In[4]:
-
-
-# COCO Class names
-# Index of the class in the list is its ID. For example, to get ID of
-# the teddy bear class, use: class_names.index('teddy bear')
+## COCO Class names
 class_names = ['BG', 'person', 'bicycle', 'car', 'motorcycle', 'airplane',
                'bus', 'train', 'truck', 'boat', 'traffic light',
                'fire hydrant', 'stop sign', 'parking meter', 'bench', 'bird',
@@ -321,19 +218,6 @@ class_names = ['BG', 'person', 'bicycle', 'car', 'motorcycle', 'airplane',
                'teddy bear', 'hair drier', 'toothbrush']
 
 
-# ## Run Object Detection
-
-# In[5]:
-
-
-
-## Define Threading JOB
-# def threadingJOB(image):
-#   printError ("Threading JOB")
-#   res1 = model.detect([image], verbose=0)
-#   print(res1)
-#   # res = res[0]
-#   return res1
 def threadingJOB(imageArr):
   printError ("Threading JOB")
   for item in imageArr:
@@ -347,11 +231,15 @@ command = "rm " + IMAGE_DIR + "/*"
 print(command)
 printComment("Erase Image DIR")
 os.system(command)
-listLength = 0
-jobList = []
 
+## 변수 초기화
+listLength = 0 # IMG_DIR안에 image 개수
+jobList = [] # 처리할 이미지 담아두는 container
+
+
+## 아두이노처럼 무한루프
 while True :
-  # 추가 시 길이에 변화가 생기면서 루프문을 벗어난다.
+  ## 추가 시 길이에 변화가 생기면서 루프문을 벗어난다.
   printComment("Length Checking...")
   while (search(IMAGE_DIR)) == 0:
    time.sleep(0.1)  # 0.1초
@@ -360,7 +248,7 @@ while True :
 
   ## Update Length
   printComment("Add New Image File")
-  listLength = search(IMAGE_DIR)
+  listLength = search(IMAGE_DIR) # IMAGE_DIR안에 이미지 개수 반환
   printComment("list Length : ")
   printComment(listLength)
 
@@ -393,21 +281,14 @@ while True :
   file_names = list(filter(p.match, file_names)) # Read Note
   printComment(file_names)
   print("Regex Completion")
-
-  # print(len(file_names))
-  # for i in range(0, len(file_names)): 
-  # for ele in file_names:
-  #   print(i)
-  #   res = p.match(file_names[i])
-  #   if(res == None):
-  #     file_names.pop(i)
-  # print(file_names)
-
+  
 
   ## Read Image files
   printComment("Read Image")
-  # image = skimage.io.imread(os.path.join(IMAGE_DIR, random.choice(file_names)))
+  
   jobList.extend(file_names)
+  # image = skimage.io.imread(os.path.join(IMAGE_DIR, random.choice(file_names)))
+
   # for i in range(0, len(file_names)):
   #   image = skimage.io.imread(os.path.join(IMAGE_DIR, file_names[i]))
   #   jobList.append(image)
@@ -445,11 +326,6 @@ while True :
   
 
   ## np.array to String
-  # print(r['masks'])
-  # print(r['class_ids'][0])
-  # print(r['rois'][0])
-  # r['class_ids'][0] = r['class_ids'][0].astype('str')
-  # print(type(r['class_ids'][0]))
   # example
   '''
   >>> x = np.array([1e-16,1,2,3])
@@ -491,50 +367,6 @@ while True :
   printComment(r)
 
 
-  # print(r['class_ids'])
-  # print(r['rois'])
-  # print(r['scores'])
-
-
-  # r['rois'] = str(r['rois'])
-  # print(r['rois'])
-  # sys.exit()
-  # length = len(r['rois'])
-  # for i in range(0,length):
-  #   r['rois'][i] = str(r['rois'][i])
-
-  # for key, value in r.items():
-  #   r[key] = str(value)
-  #   print(r[key])
-  # r = str(r)
-
-  # sys.exit()
-
-
-  # str(r)
-  # r['rois'] = str(r['rois'])
-  # r['']
-
-
-  # r = json.dumps(r)
-  # print(r)
-  # sys.exit()
-
-  ##Test Json Data
-  # r = '{"rois": [["r_1","r_2","r_3"]], "class_ids": ["1","22"] , "scores": ["90"] }'
-  # print(r)
-  # sys.exit()
-
-
-
-  # data = json.loads(r)
-  # data = str(r)
-  # print(data)
-  # print(type(data))
-  # print(data['rois'])
-  # print(data['class_ids'])
-
-
   ## dictionary --> String
   r = json.dumps(r)
   printComment(r)
@@ -573,10 +405,9 @@ while True :
   # visualize.display_instances(image, r['rois'], r['masks'], r['class_ids'], class_names, r['scores'])
 
   ## Delete masks element
-  printComment("_DELETE mask")
-  # del r['masks']
-  printComment("results : ")
-  print(r)
+  # printComment("_DELETE mask")
+  # printComment("results : ")
+  # print(r)
 
 
   ## Erase Picture
@@ -585,7 +416,6 @@ while True :
   printComment("Erase Image DIR")
   os.system(command)
   listLength = 0
-  # time.sleep(0.1)  # 0.1초
 
 
 
