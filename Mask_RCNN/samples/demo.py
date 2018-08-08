@@ -34,6 +34,7 @@ def printError(str):
 
 from threading import Thread
 from multiprocessing import Pool
+from multiprocessing import Process
 # from multiprocessing import Queue
 import json
 import http.client
@@ -41,6 +42,7 @@ import urllib
 # import json
 from collections import OrderedDict
 import queue as Queue
+import time
 import re
 import time
 import threading
@@ -79,8 +81,6 @@ print("MODEL_DIR : " + MODEL_DIR)
 print("COCO_MODEL_PATH : " + COCO_MODEL_PATH)
 
 
-
-
 ## Define JSON USER FUNCTION
 printComment("Define JSON USER FUNCTION")
 file_data = OrderedDict()
@@ -108,10 +108,11 @@ def sendToServer(data_list):
   
   #Linking with Server, Update Host and port of server with Yuntae
   # conn = http.client.HTTPConnection("192.168.0.6",8080)
-  conn = http.client.HTTPConnection("192.168.43.59",8080)
+  conn = http.client.HTTPConnection("172.20.10.6",8080)
   conn.connect()
   #Update directory server with Yuntae
-  conn.request("POST", "/JspServerTest/NewFile.jsp", params, headers)
+  # conn.request("POST", "/JspServerTest/NewFile.jsp", params, headers)
+  conn.request("POST", "/JSPServer/NewFile.jsp", params, headers)
   r1 = conn.getresponse()
   print(r1.status, r1.reason)
   conn.close() 
@@ -224,7 +225,111 @@ def threadingJOB(imageArr):
     res = model.detect([item], verbose=0)
     print(res)
 
-pool = ThreadPool(20)
+
+
+
+def poolMap(r1):
+  # try :
+  printComment("Detect Completion")
+  printComment("Config COCO")
+
+  global config
+  # MODEL_DIR = os.path.join(ROOT_DIR, "logs" + "/" + str(time.time()))
+  model1 = modellib.MaskRCNN(mode="inference", model_dir=os.path.join(ROOT_DIR, "logs" + "/" + str(time.time())), config=config)
+  # model1.load_weights(COCO_MODEL_PATH, by_name=True)
+  results = model1.detect([r1], verbose=1)  
+  print(results)
+  r = results[0]
+  printComment(r)
+  # except Exception as ex: # 에러 종류
+  #   printError("DETECT 에러 발생 ") # ex는 발생한 에러의 이름을 받아오는 변수
+  #   print(ex)
+  #   command = "rm " + IMAGE_DIR + "/" + file_names[0]
+  #   printComment(command)
+  #   printComment("Erase Image DIR")
+  #   os.system(command)
+
+
+  ## np.array to String
+  # example
+  
+  # >>> x = np.array([1e-16,1,2,3])
+  # >>> print(np.array2string(x, precision=2, separator=',',
+  # ...                       suppress_small=True))
+  # [ 0., 1., 2., 3.]
+  
+  printComment("JSON Data LOAD")
+  del r['masks']
+  # print(r)
+  
+  ## class_ids
+  list1 = []
+  length = len(r['class_ids'])
+  for i in range(0, length):
+    list1.append(np.array2string(r['class_ids'][i], precision=2, separator=',', suppress_small=True))
+  r['class_ids'] = list1
+  # print(r['class_ids'])
+
+  ## rois
+  list2 = []
+  length = len(r['rois'])
+  for i in range(0, length):
+    length2 =  len(r['rois'][i])
+    list2_sub = []
+    for j in range(0, length2):
+      list2_sub.append(np.array2string(r['rois'][i][j], precision=2, separator=',', suppress_small=True))
+    list2.append(list2_sub)
+  r['rois'] = list2
+
+  ## scores
+  list3 = []
+  length = len(r['scores'])
+  for i in range(0, length):
+    list3.append(np.array2string(r['scores'][i], precision=2, separator=',', suppress_small=True))
+  r['scores'] = list3
+  # printComment(r)
+
+  ## dictionary --> String
+  r = json.dumps(r)
+  # printComment(r)
+  ## String --> JSON OBJECT
+  data = json.loads(r)
+
+  ## Devided Json Data
+  printComment("Devided JSON DATA")
+  pre_rois = data['rois']
+  pre_class_ids = data['class_ids']
+  pre_score = data['scores']
+  jsonidx = jsonToidx(pre_class_ids)
+  # print("JSON IDX : ", jsonidx)
+  idxName = idxToName(jsonidx)
+  # print("JSON idxName : ", idxName)
+
+  print(pre_rois)
+  print("----->jsonidx Data :",jsonidx)
+  print("----->idxName Data :",idxName)
+  print(pre_score)
+
+  ## Merge to Json Data
+  file_data["rois"] = pre_rois
+  file_data["class_names"] = idxName
+  file_data["scores"] = pre_score
+  print(json.dumps(file_data,ensure_ascii=False,indent="\t"))
+  ## Send File
+  printComment("Send to File")
+  sendToServer(file_data)
+
+  # Visualize results (결과값을 저장하고 사진으로 띄워서 보여준다.)
+  # visualize.display_instances(image, r['rois'], r['masks'], r['class_ids'], class_names, r['scores'])
+
+  ## Erase Picture
+  # command = "rm " + IMAGE_DIR + "/*"
+  # print(command)
+  # printComment("Erase Image DIR")
+  # os.system(command)
+  # listLength = 0
+
+pool = Pool(20)
 
 ## Erase Picture
 command = "rm " + IMAGE_DIR + "/*"
@@ -235,6 +340,7 @@ os.system(command)
 ## 변수 초기화
 listLength = 0 # IMG_DIR안에 image 개수
 jobList = [] # 처리할 이미지 담아두는 container
+
 
 
 ## 아두이노처럼 무한루프
@@ -280,34 +386,48 @@ while True :
   p = re.compile('\w+\.(jpg|gif|png|jpeg)')
   file_names = list(filter(p.match, file_names)) # Read Note
   printComment(file_names)
+  # sys.exit()
   print("Regex Completion")
   
-
   ## Read Image files
   printComment("Read Image")
   
-  jobList.extend(file_names)
+  # jobList.extend(file_names)
   # image = skimage.io.imread(os.path.join(IMAGE_DIR, random.choice(file_names)))
+  for i in range(0, len(file_names)):
+    image = skimage.io.imread(os.path.join(IMAGE_DIR, file_names[i]))
+    jobList.append(image)
 
-  # for i in range(0, len(file_names)):
-  #   image = skimage.io.imread(os.path.join(IMAGE_DIR, file_names[i]))
-  #   jobList.append(image)
   printComment("JOB LIST PRINT : ")
   print(len(jobList))
   # print(jobList)
+  # print(pool.map(poolMap, jobList))
+
+  # p = Process(target=poolMap, args=(jobList[0],))
+  # p.start()
+  # p.join()
 
 
+  # sleep(1)
+  # if len(jobList) > 1:
+  #   jobList.pop()
 
-
-
+  ## Erase Picture
+  # command = "rm " + IMAGE_DIR + "/*"
+  # print(command)
+  # printComment("Erase Image DIR")
+  # os.system(command)
+  # listLength = 0
 
 
   try :
     printComment("Detect Completion")
     for i in range(0, len(jobList)):
-      results = model.detect([jobList[i]], verbose=0)  
+      # print('처리 사진 : {}'.format(jobList[i]))
+      results = model.detect([jobList[i]], verbose=1)  
     # results = model.detect([image], verbose=0)
     # printComment("Return results")
+    # results = model.detect(jobList, verbose=1)  
     r = results[0]
 
   except Exception as ex: # 에러 종류
@@ -320,19 +440,14 @@ while True :
     continue
 
 
-
-
-
-  
-
   ## np.array to String
   # example
-  '''
-  >>> x = np.array([1e-16,1,2,3])
-  >>> print(np.array2string(x, precision=2, separator=',',
-  ...                       suppress_small=True))
-  [ 0., 1., 2., 3.]
-  '''
+  
+  # >>> x = np.array([1e-16,1,2,3])
+  # >>> print(np.array2string(x, precision=2, separator=',',
+  # ...                       suppress_small=True))
+  # [ 0., 1., 2., 3.]
+  
   printComment("JSON Data LOAD")
   del r['masks']
   print(r)
@@ -364,9 +479,9 @@ while True :
   r['scores'] = list3
 
 
-  printComment(r)
+  # printComment(r)
 
-
+  
   ## dictionary --> String
   r = json.dumps(r)
   printComment(r)
@@ -396,11 +511,7 @@ while True :
   ## Send File
   printComment("Send to File")
   sendToServer(file_data)
-
-
-
-
-
+  
   ## Visualize results (결과값을 저장하고 사진으로 띄워서 보여준다.)
   # visualize.display_instances(image, r['rois'], r['masks'], r['class_ids'], class_names, r['scores'])
 
@@ -416,45 +527,6 @@ while True :
   printComment("Erase Image DIR")
   os.system(command)
   listLength = 0
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
