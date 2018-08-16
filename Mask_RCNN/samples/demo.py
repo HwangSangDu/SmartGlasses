@@ -103,15 +103,21 @@ def idxToName(id_list):
 #Send data to Server
 def sendToServer(data_list):
   #Set Data
+
   params = urllib.parse.urlencode({'data':data_list})
+  # b = params.encode('utf-8')
+  # print(b)
+
   headers = {"Content-type": "application/x-www-form-urlencoded","Accept": "text/plain"}
   
   #Linking with Server, Update Host and port of server with Yuntae
-  # conn = http.client.HTTPConnection("192.168.0.6",8080)
-  conn = http.client.HTTPConnection("172.20.10.6",8080)
+  conn = http.client.HTTPConnection("172.30.1.60",8080)
+  # conn = http.client.HTTPConnection("172.20.10.6",8080)
   conn.connect()
   #Update directory server with Yuntae
   # conn.request("POST", "/JspServerTest/NewFile.jsp", params, headers)
+  printComment(params)
+  
   conn.request("POST", "/JSPServer/NewFile.jsp", params, headers)
   r1 = conn.getresponse()
   print(r1.status, r1.reason)
@@ -311,10 +317,13 @@ def poolMap(r1):
   print(pre_score)
 
   ## Merge to Json Data
+  file_data = OrderedDict()
   file_data["rois"] = pre_rois
   file_data["class_names"] = idxName
   file_data["scores"] = pre_score
+  print(file_data["rois"])
   print(json.dumps(file_data,ensure_ascii=False,indent="\t"))
+  file_data = json.dumps(file_data,ensure_ascii=False,indent="\t")
   ## Send File
   printComment("Send to File")
   sendToServer(file_data)
@@ -394,9 +403,12 @@ while True :
   
   # jobList.extend(file_names)
   # image = skimage.io.imread(os.path.join(IMAGE_DIR, random.choice(file_names)))
-  for i in range(0, len(file_names)):
-    image = skimage.io.imread(os.path.join(IMAGE_DIR, file_names[i]))
-    jobList.append(image)
+  # for i in range(0, len(file_names)):
+  #   image = skimage.io.imread(os.path.join(IMAGE_DIR, file_names[i]))
+  #   jobList.append(image)
+
+  image = skimage.io.imread(os.path.join(IMAGE_DIR, random.choice(file_names)))
+
 
   printComment("JOB LIST PRINT : ")
   print(len(jobList))
@@ -422,10 +434,11 @@ while True :
 
   try :
     printComment("Detect Completion")
-    for i in range(0, len(jobList)):
-      # print('처리 사진 : {}'.format(jobList[i]))
-      results = model.detect([jobList[i]], verbose=1)  
-    # results = model.detect([image], verbose=0)
+    # for i in range(0, len(jobList)):
+    #   # print('처리 사진 : {}'.format(jobList[i]))
+    #   results = model.detect([jobList[i]], verbose=1)  
+
+    results = model.detect([image], verbose=0)
     # printComment("Return results")
     # results = model.detect(jobList, verbose=1)  
     r = results[0]
@@ -448,6 +461,9 @@ while True :
   # ...                       suppress_small=True))
   # [ 0., 1., 2., 3.]
   
+
+
+
   printComment("JSON Data LOAD")
   del r['masks']
   print(r)
@@ -479,15 +495,23 @@ while True :
   r['scores'] = list3
 
 
+
+
+
+
   # printComment(r)
 
   
   ## dictionary --> String
+
+
+
+
+
   r = json.dumps(r)
   printComment(r)
   ## String --> JSON OBJECT
   data = json.loads(r)
-
   ## Devided Json Data
   printComment("Devided JSON DATA")
   pre_rois = data['rois']
@@ -504,17 +528,27 @@ while True :
   print(pre_score)
 
   ## Merge to Json Data
+  file_data = OrderedDict()
   file_data["rois"] = pre_rois
   file_data["class_names"] = idxName
   file_data["scores"] = pre_score
+  print("file_data : ",file_data)
+  print()
   print(json.dumps(file_data,ensure_ascii=False,indent="\t"))
+  file_data = json.dumps(file_data,ensure_ascii=False,indent="\t")
+  print("json dumps file_data : ",file_data)
+
   ## Send File
   printComment("Send to File")
+  printComment(file_data)
   sendToServer(file_data)
   
+
+
+
   ## Visualize results (결과값을 저장하고 사진으로 띄워서 보여준다.)
   # visualize.display_instances(image, r['rois'], r['masks'], r['class_ids'], class_names, r['scores'])
-
+  # sys.exit()
   ## Delete masks element
   # printComment("_DELETE mask")
   # printComment("results : ")
