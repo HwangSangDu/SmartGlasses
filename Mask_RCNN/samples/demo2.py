@@ -500,6 +500,10 @@ while True :
   r['scores'] = list3
 
 
+
+
+
+
   # printComment(r)
 
   
