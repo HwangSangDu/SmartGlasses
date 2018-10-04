@@ -1,2 +1,5 @@
 Tensorflow/
+# *.zip
+cocoapi/
 *.zip
+tomcat/
