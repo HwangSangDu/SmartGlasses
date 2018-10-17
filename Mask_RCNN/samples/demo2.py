@@ -334,7 +334,7 @@ class_names = ['BG', 'person', 'bicycle', 'car', 'motorcycle', 'airplane',
 #   sendToServer(file_data)
 
 #   # Visualize results (결과값을 저장하고 사진으로 띄워서 보여준다.)
-#   # visualize.display_instances(image, r['rois'], r['masks'], r['class_ids'], class_names, r['scores'])
+#visualize.display_instances(image, r['rois'], r['masks'], r['class_ids'], class_names, r['scores'])
 
 #   ## Erase Picture
 #   # command = "rm " + IMAGE_DIR + "/*"
@@ -447,7 +447,7 @@ while True :
     # printComment("Return results")
     # results = model.detect(jobList, verbose=1)  
     r = results[0]
-
+    visualize.display_instances(image, r['rois'], r['masks'], r['class_ids'], class_names, r['scores'])
   except Exception as ex: # 에러 종류
     printError("DETECT 에러 발생 ") # ex는 발생한 에러의 이름을 받아오는 변수
     print(ex)
