@@ -447,6 +447,7 @@ while True :
     # printComment("Return results")
     # results = model.detect(jobList, verbose=1)  
     r = results[0]
+    printComment(r)
     visualize.display_instances(image, r['rois'], r['masks'], r['class_ids'], class_names, r['scores'])
   except Exception as ex: # 에러 종류
     printError("DETECT 에러 발생 ") # ex는 발생한 에러의 이름을 받아오는 변수
